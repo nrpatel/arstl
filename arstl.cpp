@@ -12,6 +12,7 @@
 #include <aruco/aruco.h>
 #include <aruco/boarddetector.h>
 #include "common.h"
+#include "stlparser.h"
 using namespace cv;
 using namespace aruco;
 
@@ -30,6 +31,7 @@ BoardConfiguration TheBoardConfig;
 Mat TheInputImage,TheUndInputImage,TheResizedImage;
 CameraParameters TheCameraParams;
 Size TheGlWindowSize;
+GLuint STLDisplayList;
 bool TheCaptureFlag=true;
 void readArguments ( int argc,char **argv );
 void usage();
@@ -37,6 +39,7 @@ void vDrawScene();
 void vIdle();
 void vResize( GLsizei iWidth, GLsizei iHeight );
 void vMouse(int b,int s,int x,int y);
+static GLuint loadSTL(const char *filename);
 /************************************
  *
  *
@@ -83,7 +86,7 @@ int main(int argc,char **argv)
 		glutInitWindowPosition( 0, 0);
 		glutInitWindowSize(TheInputImage.size().width,TheInputImage.size().height);
 		glutInitDisplayMode( GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE );
-		glutCreateWindow( "AruCo" );
+		glutCreateWindow( "arstl" );
 		glutDisplayFunc( vDrawScene );
 		glutIdleFunc( vIdle );
 		glutReshapeFunc( vResize );
@@ -91,6 +94,7 @@ int main(int argc,char **argv)
 		glClearColor( 0.0, 0.0, 0.0, 1.0 );
 		glClearDepth( 1.0 );
 		TheGlWindowSize=TheInputImage.size();
+		STLDisplayList = loadSTL("whistle_v2.stl");
 		vResize(TheGlWindowSize.width,TheGlWindowSize.height);
 		glutMainLoop();
 
@@ -101,6 +105,33 @@ int main(int argc,char **argv)
 	}
 
 }
+
+static void drawSTL(float *faces, int numFaces)
+{
+    glBegin(GL_TRIANGLES);
+    for (int i = 0; i < numFaces; i++) {
+        glVertex3f(faces[i*12+3]/1000.0,faces[i*12+4]/1000.0,faces[i*12+5]/1000.0);
+        glVertex3f(faces[i*12+6]/1000.0,faces[i*12+7]/1000.0,faces[i*12+8]/1000.0);
+        glVertex3f(faces[i*12+9]/1000.0,faces[i*12+10]/1000.0,faces[i*12+11]/1000.0);
+    }
+    glEnd();
+}
+
+static GLuint loadSTL(const char *filename)
+{
+    GLuint displayList = glGenLists(1);
+    int numFaces = 0;
+    float *faces = load_stl(filename, &numFaces);
+    if (faces) {
+        glNewList(displayList,GL_COMPILE);
+        drawSTL(faces, numFaces);
+        glEndList();
+        free(faces);
+    }
+    return displayList;   
+}
+
+
 /************************************
  *
  *
@@ -206,6 +237,7 @@ void vDrawScene()
 		glTranslatef(0, TheMarkerSize/2,0);
 		glPushMatrix();
  		glutWireCube( TheMarkerSize );
+ 		glCallList(STLDisplayList);
 		axis(TheMarkerSize);
 		glPopMatrix();
 	}
