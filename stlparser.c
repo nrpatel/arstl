@@ -70,8 +70,53 @@ float *parse_stl(const char *data, int data_length, int *facets)
 // Parses an ASCII STL string and returns the array of floats
 float *parse_stl_string(const char *data, int data_length, int *facets)
 {
-    // TODO: Implement this
-    return NULL;
+    int faces = 0;
+    float *parsed = NULL;
+    char *loc = (char *)data;
+    // Find the number of faces first
+    if ((loc = strstr(loc, "endfacet"))) {
+        faces = 1;
+        while((loc = strstr(loc+sizeof("endfacet"), "endfacet"))) faces++;
+    } else {
+        return NULL;
+    }
+    
+    parsed = (float *)malloc(faces*12*4);
+    if (!parsed) return NULL;
+    
+    *facets = faces;
+    // Go past the name line
+    if (!(loc = strchr((char *)data, '\n'))) {
+        free(parsed);
+        return NULL;
+    }
+    float x, y, z;
+    float *ptr = parsed;
+    while (1) {
+        // Parse each face
+        if (!(loc = strstr(loc+sizeof("vertex"),"normal"))) break;
+        if (sscanf(loc, "normal %f %f %f", &x, &y, &z) != 3) break;
+        *ptr++ = x;
+        *ptr++ = y;
+        *ptr++ = z;
+        if (!(loc = strstr(loc+sizeof("normal"),"vertex"))) break;
+        if (sscanf(loc, "vertex %f %f %f", &x, &y, &z) != 3) break;
+        *ptr++ = x;
+        *ptr++ = y;
+        *ptr++ = z;
+        if (!(loc = strstr(loc+sizeof("normal"),"vertex"))) break;
+        if (sscanf(loc, "vertex %f %f %f", &x, &y, &z) != 3) break;
+        *ptr++ = x;
+        *ptr++ = y;
+        *ptr++ = z;
+        if (!(loc = strstr(loc+sizeof("normal"),"vertex"))) break;
+        if (sscanf(loc ,"vertex %f %f %f", &x, &y, &z) != 3) break;
+        *ptr++ = x;
+        *ptr++ = y;
+        *ptr++ = z;
+    }
+    
+    return parsed;
 }
 
 // Parses an STL binary and returns the array of floats
@@ -89,7 +134,7 @@ float *parse_stl_binary(const char *data, int data_length, int *facets)
     // Make sure the data provided can actually contain the number of faces
     if (faces*50+84 < data_length) return NULL;
     
-    parsed = (float *)malloc(faces*50);
+    parsed = (float *)malloc(faces*12*4);
     if (!parsed) return NULL;
     
     *facets = faces;

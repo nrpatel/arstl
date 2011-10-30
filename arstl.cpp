@@ -94,7 +94,7 @@ int main(int argc,char **argv)
 		glClearColor( 0.0, 0.0, 0.0, 1.0 );
 		glClearDepth( 1.0 );
 		TheGlWindowSize=TheInputImage.size();
-		STLDisplayList = loadSTL("whistle_v2.stl");
+		STLDisplayList = loadSTL("will.stl");
 		vResize(TheGlWindowSize.width,TheGlWindowSize.height);
 		glutMainLoop();
 
