@@ -110,9 +110,10 @@ static void drawSTL(float *faces, int numFaces)
 {
     glBegin(GL_TRIANGLES);
     for (int i = 0; i < numFaces; i++) {
-        glVertex3f(faces[i*12+3]/1000.0,faces[i*12+4]/1000.0,faces[i*12+5]/1000.0);
-        glVertex3f(faces[i*12+6]/1000.0,faces[i*12+7]/1000.0,faces[i*12+8]/1000.0);
-        glVertex3f(faces[i*12+9]/1000.0,faces[i*12+10]/1000.0,faces[i*12+11]/1000.0);
+        // Switching y and z since OpenGL uses a Y-up coordinate system
+        glVertex3f(faces[i*12+3]/1000.0,faces[i*12+5]/1000.0,-faces[i*12+4]/1000.0);
+        glVertex3f(faces[i*12+6]/1000.0,faces[i*12+8]/1000.0,-faces[i*12+7]/1000.0);
+        glVertex3f(faces[i*12+9]/1000.0,faces[i*12+11]/1000.0,-faces[i*12+10]/1000.0);
     }
     glEnd();
 }
