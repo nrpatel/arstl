@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <arpa/inet.h>
 
-static char *load_file(const char *filename, int *len)
+char *load_file(const char *filename, int *len)
 {
     char *buf = NULL;
     FILE *fp;
