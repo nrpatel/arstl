@@ -16,7 +16,7 @@
 using namespace cv;
 using namespace aruco;
 
-string TheInputVideo,TheIntrinsicFile,TheBoardConfigFile;
+string TheInputVideo, TheIntrinsicFile, TheBoardConfigFile;
 bool isIntrinsicFileYAML=false;
 bool The3DInfoAvailable=false;
 float TheMarkerSize=-1;
@@ -27,30 +27,35 @@ vector<Marker> TheMarkers;
 BoardDetector TheBoardDetector;
 pair<Board,float> TheBoardDetected; //the board and its probability
 BoardConfiguration TheBoardConfig;
-Mat TheInputImage,TheUndInputImage,TheResizedImage;
+Mat TheInputImage, TheUndInputImage, TheResizedImage;
 CameraParameters TheCameraParams;
 Size TheGlWindowSize;
 char *STLFile;
 GLuint STLDisplayList;
 bool TheCaptureFlag=true;
 
-void readArguments ( int argc,char **argv );
+void readArguments(int argc,char **argv);
 void usage();
 void vDrawScene();
 void vIdle();
-void vResize( GLsizei iWidth, GLsizei iHeight );
-void vMouse(int b,int s,int x,int y);
+void vResize(GLsizei iWidth, GLsizei iHeight);
+void vMouse(int b, int s, int x, int y);
 static GLuint loadSTL(const char *filename);
 
-int main(int argc,char **argv)
+int main(int argc, char **argv)
 {
-	try
-	{
-		if(argc==1) usage();
-		readArguments (argc,argv);
-		if (TheIntrinsicFile==""){cerr<<"-f or -y option required"<<endl;return -1;}
-		if (TheMarkerSize==-1){cerr<<"-s option required"<<endl;return -1;}
-		if(TheBoardConfigFile==""){
+	try {
+		if (argc == 1) usage();
+		readArguments(argc, argv);
+		if (TheIntrinsicFile == "") {
+		    cerr<<"-f or -y option required"<<endl;
+		    return -1;
+		}
+		if (TheMarkerSize == -1) {
+		    cerr<<"-s option required"<<endl;
+		    return -1;
+		}
+		if (TheBoardConfigFile == "") {
 		  cerr<<"The board configuration info must be provided (-b option)"<<endl;
 		  return -1;
 		}
@@ -58,47 +63,43 @@ int main(int argc,char **argv)
 		TheBoardConfig.readFromFile(TheBoardConfigFile);
 
 		//Open video input source
-		if (TheInputVideo=="")  //read from camera
-		  TheVideoCapturer.open(0);
-		else TheVideoCapturer.open(TheInputVideo);
-		if (!TheVideoCapturer.isOpened())
-		{
+		if (TheInputVideo == "")  //read from camera
+		    TheVideoCapturer.open(0);
+		else
+		    TheVideoCapturer.open(TheInputVideo);
+		if (!TheVideoCapturer.isOpened()) {
 			cerr<<"Could not open video"<<endl;
 			return -1;
-
 		}
 
 		//read first image
 		TheVideoCapturer>>TheInputImage;
 		//read camera paramters if passed
 		if (isIntrinsicFileYAML)
-		  TheCameraParams.readFromXMLFile(TheIntrinsicFile);
+		    TheCameraParams.readFromXMLFile(TheIntrinsicFile);
 		else 
-		  TheCameraParams.readFromFile(TheIntrinsicFile);
-		TheCameraParams.resize( TheInputImage.size());
+		    TheCameraParams.readFromFile(TheIntrinsicFile);
+		TheCameraParams.resize(TheInputImage.size());
 
 		glutInit(&argc, argv);
-		glutInitWindowPosition( 0, 0);
-		glutInitWindowSize(TheInputImage.size().width,TheInputImage.size().height);
-		glutInitDisplayMode( GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE );
-		glutCreateWindow( "arstl" );
-		glutDisplayFunc( vDrawScene );
-		glutIdleFunc( vIdle );
-		glutReshapeFunc( vResize );
+		glutInitWindowPosition(0, 0);
+		glutInitWindowSize(TheInputImage.size().width, TheInputImage.size().height);
+		glutInitDisplayMode(GLUT_RGB | GLUT_DEPTH | GLUT_DOUBLE);
+		glutCreateWindow("arstl");
+		glutDisplayFunc(vDrawScene);
+		glutIdleFunc(vIdle);
+		glutReshapeFunc(vResize);
 		glutMouseFunc(vMouse);
-		glClearColor( 0.0, 0.0, 0.0, 1.0 );
-		glClearDepth( 1.0 );
+		glClearColor(0.0, 0.0, 0.0, 1.0);
+		glClearDepth(1.0);
 		TheGlWindowSize=TheInputImage.size();
 		STLDisplayList = loadSTL(STLFile);
 		vResize(TheGlWindowSize.width,TheGlWindowSize.height);
 		glutMainLoop();
 
-	}catch(std::exception &ex)
-
-	{
+	} catch (std::exception &ex) {
 		cout<<"Exception :"<<ex.what()<<endl;
 	}
-
 }
 
 static void drawSTL(float *faces, int numFaces)
@@ -128,20 +129,22 @@ static GLuint loadSTL(const char *filename)
     return displayList;   
 }
 
-void vMouse(int b,int s,int x,int y)
+void vMouse(int b, int s, int x, int y)
 {
-    if (b==GLUT_LEFT_BUTTON && s==GLUT_DOWN) {
-      TheCaptureFlag=!TheCaptureFlag;
+    if (b == GLUT_LEFT_BUTTON && s == GLUT_DOWN) {
+      TheCaptureFlag = !TheCaptureFlag;
     }
 }
 
 void vDrawScene()
 {
-	if (TheResizedImage.rows==0) //prevent from going on until the image is initialized
+    //prevent from going on until the image is initialized
+	if (TheResizedImage.rows == 0)
 	  return;
-	///clear
-	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-	///draw image in the buffer
+    
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	// draw image in the buffer
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glMatrixMode(GL_PROJECTION);
@@ -149,21 +152,22 @@ void vDrawScene()
 	glOrtho(0, TheGlWindowSize.width, 0, TheGlWindowSize.height, -1.0, 1.0);
 	glViewport(0, 0, TheGlWindowSize.width , TheGlWindowSize.height);
 	glDisable(GL_TEXTURE_2D);
-	glPixelZoom( 1, -1);
-	glRasterPos3f( 0, TheGlWindowSize.height  - 0.5, -1.0 );
-	glDrawPixels ( TheGlWindowSize.width , TheGlWindowSize.height , GL_BGR , GL_UNSIGNED_BYTE , TheResizedImage.ptr(0) );
-	///Set the appropriate projection matrix so that rendering is done in a enrvironment
-	//like the real camera (without distorsion)
+	glPixelZoom(1, -1);
+	glRasterPos3f(0, TheGlWindowSize.height - 0.5, -1.0);
+	glDrawPixels(TheGlWindowSize.width, TheGlWindowSize.height, GL_BGR, GL_UNSIGNED_BYTE, TheResizedImage.ptr(0));
+	
+	// Set the appropriate projection matrix so that rendering is done in an
+	// environment like the real camera (without distortion)
 	glMatrixMode(GL_PROJECTION);
 	double proj_matrix[16];
-	MarkerDetector::glGetProjectionMatrix(TheCameraParams,TheInputImage.size(),TheGlWindowSize,proj_matrix,0.05,10);
+	MarkerDetector::glGetProjectionMatrix(TheCameraParams, TheInputImage.size(), TheGlWindowSize, proj_matrix, 0.05, 10);
 	glLoadIdentity();
 	glLoadMatrixd(proj_matrix);
 
 	double modelview_matrix[16];
-	//If the board is detected with enough probability
-	if (TheBoardDetected.second>0.3){
-	  TheBoardDetected.first.glGetModelViewMatrix(modelview_matrix);
+	// If the board is detected with enough probability
+	if (TheBoardDetected.second > 0.3){
+	    TheBoardDetected.first.glGetModelViewMatrix(modelview_matrix);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glLoadMatrixd(modelview_matrix);
@@ -177,36 +181,35 @@ void vDrawScene()
 
 void vIdle()
 {
-  if(TheCaptureFlag){
-	//capture image
+  if (TheCaptureFlag) {
+	// Capture image
 	TheVideoCapturer.grab();
-	TheVideoCapturer.retrieve( TheInputImage);
-	TheUndInputImage.create(TheInputImage.size(),CV_8UC3);
-	//remove distorion in image
-	cv::undistort(TheInputImage,TheUndInputImage, TheCameraParams.CameraMatrix,TheCameraParams.Distorsion);
-	//detect markers
-	MDetector.detect(TheUndInputImage,TheMarkers,TheCameraParams.CameraMatrix,Mat(),TheMarkerSize);
-	//Detection of the board
-	TheBoardDetected.second=TheBoardDetector.detect( TheMarkers, TheBoardConfig,TheBoardDetected.first, TheCameraParams,TheMarkerSize);
-	//chekc the speed by calculating the mean speed of all iterations
-	//resize the image to the size of the GL window
-	cv::resize(TheUndInputImage,TheResizedImage,TheGlWindowSize);
+	TheVideoCapturer.retrieve(TheInputImage);
+	TheUndInputImage.create(TheInputImage.size(), CV_8UC3);
+	// Remove distortion in image
+	cv::undistort(TheInputImage,TheUndInputImage, TheCameraParams.CameraMatrix, TheCameraParams.Distorsion);
+	// Detect markers
+	MDetector.detect(TheUndInputImage, TheMarkers, TheCameraParams.CameraMatrix,Mat(), TheMarkerSize);
+	// Detect board
+	TheBoardDetected.second = TheBoardDetector.detect(TheMarkers, TheBoardConfig, TheBoardDetected.first, TheCameraParams,TheMarkerSize);
+	// Resize the image to the size of the GL window
+	cv::resize(TheUndInputImage, TheResizedImage, TheGlWindowSize);
   }
   glutPostRedisplay();
 }
 
-void vResize( GLsizei iWidth, GLsizei iHeight )
+void vResize(GLsizei iWidth, GLsizei iHeight)
 {
-	TheGlWindowSize=Size(iWidth,iHeight);
-	//not all sizes are allowed. OpenCv images have padding at the end of each line in these that are not aligned to 4 bytes
-	if (iWidth*3%4!=0){
-	  iWidth+=iWidth*3%4;//resize to avoid padding
-	  vResize(iWidth,TheGlWindowSize.height);
-	}
-	else{
+	TheGlWindowSize = Size(iWidth, iHeight);
+	// Not all sizes are allowed. OpenCV images have padding at the end of 
+	// each line in these that are not aligned to 4 bytes
+	if (iWidth*3%4 != 0) {
+	  iWidth += iWidth*3%4;
+	  vResize(iWidth, TheGlWindowSize.height);
+	} else {
 	  //resize the image to the size of the GL window
-	  if (TheUndInputImage.rows!=0)
-	    cv::resize(TheUndInputImage,TheResizedImage,TheGlWindowSize);
+	  if (TheUndInputImage.rows != 0)
+	    cv::resize(TheUndInputImage, TheResizedImage, TheGlWindowSize);
 	}
 }
 
@@ -221,61 +224,55 @@ void usage()
 	cout<<" -s <size>: size of the marker's sides (expressed in meters!)"<<endl;
 }
 
-void readArguments ( int argc,char **argv )
+void readArguments (int argc, char **argv)
 {
-    static const char short_options [] = "hi:f:s:b:y:";
+    static const char short_options[] = "hi:f:s:b:y:";
 
-    static const struct option
-    long_options [] =
+    static const struct option long_options[] =
     {
-	    { "help",           no_argument,   NULL,                 'h' },
-	    { "input",     required_argument,   NULL,           'i' },
-	    { "intFile",     required_argument,   NULL,           'f' },
-	    { "YAMLFile",     required_argument,   NULL,           'y' },
-	    { "size",     required_argument,   NULL,           's' },
-	    { "boardFile",     required_argument,   NULL,           'b' },
-
+	    { "help", no_argument, NULL, 'h' },
+	    { "input", required_argument, NULL, 'i' },
+	    { "intFile", required_argument, NULL, 'f' },
+	    { "YAMLFile", required_argument, NULL, 'y' },
+	    { "size", required_argument, NULL, 's' },
+	    { "boardFile", required_argument, NULL, 'b' },
 	    { 0, 0, 0, 0 }
     };
 
-	for ( ;; )
-	{
+	while (1) {
 		int index;
 		int c;
-		c = getopt_long ( argc, argv,
-			short_options, long_options,
-			&index );
+		c = getopt_long(argc, argv, short_options, long_options, &index);
 
-		if ( -1 == c )
+		if (-1 == c)
 			break;
-		switch ( c )
-		{
+		switch (c) {
 			case 0:
 				break;
 			case 'h':
-				usage ();
-				exit ( EXIT_SUCCESS );
+				usage();
+				exit(EXIT_SUCCESS);
 				break;
 			case 'i':
-				TheInputVideo=optarg;
+				TheInputVideo = optarg;
 				break;
 			case 'f':
-				TheIntrinsicFile=optarg;
-				isIntrinsicFileYAML=false;
+				TheIntrinsicFile = optarg;
+				isIntrinsicFileYAML = false;
 				break;
 			case 'y':
-				TheIntrinsicFile=optarg;
-				isIntrinsicFileYAML=true;
+				TheIntrinsicFile = optarg;
+				isIntrinsicFileYAML = true;
 				break;
 			case 's':
-				TheMarkerSize=atof(optarg);
+				TheMarkerSize = atof(optarg);
 				break;
 			case 'b':
-				TheBoardConfigFile=optarg;
+				TheBoardConfigFile = optarg;
 				break;
 			default:
-				usage ();
-				exit ( EXIT_FAILURE );
+				usage();
+				exit(EXIT_FAILURE);
 		};
 	}
 	
