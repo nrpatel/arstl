@@ -7,7 +7,7 @@
 #include <getopt.h>
 #include <fstream>
 #include <sstream>
-#include <GL/gl.h>
+#include <GL/glew.h>
 #include <GL/glut.h>
 #include <aruco/aruco.h>
 #include <aruco/boarddetector.h>
@@ -32,6 +32,9 @@ CameraParameters TheCameraParams;
 Size TheGlWindowSize;
 char *STLFile;
 GLuint STLDisplayList;
+GLuint program;
+GLuint vertex;
+GLuint fragment;
 bool TheCaptureFlag=true;
 
 void readArguments(int argc,char **argv);
@@ -40,6 +43,7 @@ void vDrawScene();
 void vIdle();
 void vResize(GLsizei iWidth, GLsizei iHeight);
 void vMouse(int b, int s, int x, int y);
+static int load_shaders();
 static GLuint loadSTL(const char *filename);
 
 int main(int argc, char **argv)
@@ -100,13 +104,18 @@ int main(int argc, char **argv)
         glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
         glLightfv(GL_LIGHT1, GL_POSITION,LightPosition);
         glEnable(GL_LIGHT1);
-		GLfloat material_diffuse[] = { 0.8, 0.8, 1.0, 0.75 };
-        GLfloat material_specular[] = { 0.9, 0.9, 1.0, 1.0 };
+		GLfloat material_diffuse[] = { 0.8, 0.8, 1.0, 1.0 };
+        GLfloat material_specular[] = { 0.5, 0.5, 0.8, 1.0 };
         GLfloat material_shininess[] = { 75.0 };
         glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, material_diffuse);
         glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material_specular);
         glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, material_shininess);
 		TheGlWindowSize=TheInputImage.size();
+		glewInit();
+		if (load_shaders()) {
+		    fprintf(stderr, "Failed to load shaders\n");
+		    return -1;
+		}
 		STLDisplayList = loadSTL(STLFile);
 		vResize(TheGlWindowSize.width,TheGlWindowSize.height);
 		glutMainLoop();
@@ -115,6 +124,43 @@ int main(int argc, char **argv)
 		cout<<"Exception :"<<ex.what()<<endl;
 	}
 }
+
+static int load_shaders()
+{
+    char *vbuf, *fbuf;
+    int len = 0;
+    
+    vbuf = load_file("arstl.vert", &len);
+    if (vbuf) {
+        fbuf = load_file("arstl.frag", &len);
+        if (!fbuf) {
+            free(vbuf);
+            return 1;
+        }
+    } else {
+        return 1;
+    }
+    
+    vertex = glCreateShader(GL_VERTEX_SHADER);
+    fragment = glCreateShader(GL_FRAGMENT_SHADER);
+    
+    glShaderSource(vertex, 1, (const GLchar **)&vbuf, NULL);
+    glShaderSource(fragment, 1, (const GLchar **)&fbuf, NULL);
+    
+    free(vbuf);
+    free(fbuf);
+    
+    glCompileShader(vertex);
+    glCompileShader(fragment);
+    
+    program = glCreateProgram();
+    glAttachShader(program, vertex);
+    glAttachShader(program, fragment);
+    glLinkProgram(program);
+    glUseProgram(program);
+    
+    return 0;
+}   
 
 static void drawSTL(float *faces, int numFaces)
 {
