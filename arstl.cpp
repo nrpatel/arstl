@@ -1,6 +1,13 @@
-/*
+/* arstl - Augmented Reality for 3D Printing with STL Files
+ * by Nirav Patel <nrp@eclecti.cc>
+ *
  * Hacked together from the aruco_test_board_gl example available under a
  * BSD license from the ArUco library by Rafael Munoz-Salinas: rmsalinas@uco.es
+ *
+ * TODO: Clean up this file to move away from aruco_test_board_gl towards my
+ *       coding style.
+ *       Make the shader look more convincing.
+ *       Add controls to change transparency and freeze board location.
  */
 
 #include <iostream>
