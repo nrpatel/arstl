@@ -92,6 +92,20 @@ int main(int argc, char **argv)
 		glutMouseFunc(vMouse);
 		glClearColor(0.0, 0.0, 0.0, 1.0);
 		glClearDepth(1.0);
+		GLfloat LightAmbient[] = { 0.9f, 0.9f, 0.9f, 1.0f };
+        GLfloat LightDiffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+        GLfloat LightPosition[] = { -10.0f, 10.0f, 10.0f, 1.0f };
+        glEnable(GL_LIGHTING);
+		glLightfv(GL_LIGHT1, GL_AMBIENT, LightAmbient);
+        glLightfv(GL_LIGHT1, GL_DIFFUSE, LightDiffuse);
+        glLightfv(GL_LIGHT1, GL_POSITION,LightPosition);
+        glEnable(GL_LIGHT1);
+		GLfloat material_diffuse[] = { 0.8, 0.8, 1.0, 0.75 };
+        GLfloat material_specular[] = { 0.9, 0.9, 1.0, 1.0 };
+        GLfloat material_shininess[] = { 75.0 };
+        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, material_diffuse);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material_specular);
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, material_shininess);
 		TheGlWindowSize=TheInputImage.size();
 		STLDisplayList = loadSTL(STLFile);
 		vResize(TheGlWindowSize.width,TheGlWindowSize.height);
@@ -105,9 +119,11 @@ int main(int argc, char **argv)
 static void drawSTL(float *faces, int numFaces)
 {
     glBegin(GL_TRIANGLES);
+    glEnable(GL_NORMALIZE);
     for (int i = 0; i < numFaces; i++) {
         // Switching y and z since OpenGL uses a Y-up coordinate system.
         // Also convert millimeters to meters
+        glNormal3f(faces[i*12],faces[i*12+2],-faces[i*12+1]);
         glVertex3f(faces[i*12+3]/1000.0,faces[i*12+5]/1000.0,-faces[i*12+4]/1000.0);
         glVertex3f(faces[i*12+6]/1000.0,faces[i*12+8]/1000.0,-faces[i*12+7]/1000.0);
         glVertex3f(faces[i*12+9]/1000.0,faces[i*12+11]/1000.0,-faces[i*12+10]/1000.0);
@@ -143,7 +159,7 @@ void vDrawScene()
 	  return;
     
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
+	glDisable(GL_DEPTH_TEST);
 	// draw image in the buffer
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -151,10 +167,10 @@ void vDrawScene()
 	glLoadIdentity();
 	glOrtho(0, TheGlWindowSize.width, 0, TheGlWindowSize.height, -1.0, 1.0);
 	glViewport(0, 0, TheGlWindowSize.width , TheGlWindowSize.height);
-	glDisable(GL_TEXTURE_2D);
 	glPixelZoom(1, -1);
 	glRasterPos3f(0, TheGlWindowSize.height - 0.5, -1.0);
 	glDrawPixels(TheGlWindowSize.width, TheGlWindowSize.height, GL_BGR, GL_UNSIGNED_BYTE, TheResizedImage.ptr(0));
+	glEnable(GL_DEPTH_TEST);
 	
 	// Set the appropriate projection matrix so that rendering is done in an
 	// environment like the real camera (without distortion)
