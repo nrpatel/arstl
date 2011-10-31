@@ -1,6 +1,6 @@
 /*
- * Based on the aruco_test_board_gl example available under a BSD license from
- * the ArUco library by Rafael Munoz-Salinas: rmsalinas@uco.es
+ * Hacked together from the aruco_test_board_gl example available under a
+ * BSD license from the ArUco library by Rafael Munoz-Salinas: rmsalinas@uco.es
  */
 
 #include <iostream>
@@ -24,15 +24,16 @@ MarkerDetector MDetector;
 BoardDetector BDetector;
 VideoCapture TheVideoCapturer;
 vector<Marker> TheMarkers;
-//board
 BoardDetector TheBoardDetector;
-pair<Board,float> TheBoardDetected; //the board and its probabilit
+pair<Board,float> TheBoardDetected; //the board and its probability
 BoardConfiguration TheBoardConfig;
 Mat TheInputImage,TheUndInputImage,TheResizedImage;
 CameraParameters TheCameraParams;
 Size TheGlWindowSize;
+char *STLFile;
 GLuint STLDisplayList;
 bool TheCaptureFlag=true;
+
 void readArguments ( int argc,char **argv );
 void usage();
 void vDrawScene();
@@ -40,12 +41,6 @@ void vIdle();
 void vResize( GLsizei iWidth, GLsizei iHeight );
 void vMouse(int b,int s,int x,int y);
 static GLuint loadSTL(const char *filename);
-/************************************
- *
- *
- *
- *
- ************************************/
 
 int main(int argc,char **argv)
 {
@@ -94,7 +89,7 @@ int main(int argc,char **argv)
 		glClearColor( 0.0, 0.0, 0.0, 1.0 );
 		glClearDepth( 1.0 );
 		TheGlWindowSize=TheInputImage.size();
-		STLDisplayList = loadSTL("will.stl");
+		STLDisplayList = loadSTL(STLFile);
 		vResize(TheGlWindowSize.width,TheGlWindowSize.height);
 		glutMainLoop();
 
@@ -110,7 +105,8 @@ static void drawSTL(float *faces, int numFaces)
 {
     glBegin(GL_TRIANGLES);
     for (int i = 0; i < numFaces; i++) {
-        // Switching y and z since OpenGL uses a Y-up coordinate system
+        // Switching y and z since OpenGL uses a Y-up coordinate system.
+        // Also convert millimeters to meters
         glVertex3f(faces[i*12+3]/1000.0,faces[i*12+5]/1000.0,-faces[i*12+4]/1000.0);
         glVertex3f(faces[i*12+6]/1000.0,faces[i*12+8]/1000.0,-faces[i*12+7]/1000.0);
         glVertex3f(faces[i*12+9]/1000.0,faces[i*12+11]/1000.0,-faces[i*12+10]/1000.0);
@@ -132,57 +128,13 @@ static GLuint loadSTL(const char *filename)
     return displayList;   
 }
 
-
-/************************************
- *
- *
- *
- *
- ************************************/
-
 void vMouse(int b,int s,int x,int y)
 {
     if (b==GLUT_LEFT_BUTTON && s==GLUT_DOWN) {
       TheCaptureFlag=!TheCaptureFlag;
     }
-
 }
 
-/************************************
- *
- *
- *
- *
- ************************************/
-void axis(float size)
-{
-    glColor3f (1,0,0 );
-    glBegin(GL_LINES);
-    glVertex3f(0.0f, 0.0f, 0.0f); // origin of the line
-    glVertex3f(size,0.0f, 0.0f); // ending point of the line
-    glEnd( );
-
-    glColor3f ( 0,1,0 );
-    glBegin(GL_LINES);
-    glVertex3f(0.0f, 0.0f, 0.0f); // origin of the line
-    glVertex3f( 0.0f,size, 0.0f); // ending point of the line
-    glEnd( );
-
-
-    glColor3f (0,0,1 );
-    glBegin(GL_LINES);
-    glVertex3f(0.0f, 0.0f, 0.0f); // origin of the line
-    glVertex3f(0.0f, 0.0f, size); // ending point of the line
-    glEnd( );
-
-
-}
-/************************************
- *
- *
- *
- *
- ************************************/
 void vDrawScene()
 {
 	if (TheResizedImage.rows==0) //prevent from going on until the image is initialized
@@ -199,7 +151,7 @@ void vDrawScene()
 	glDisable(GL_TEXTURE_2D);
 	glPixelZoom( 1, -1);
 	glRasterPos3f( 0, TheGlWindowSize.height  - 0.5, -1.0 );
-	glDrawPixels ( TheGlWindowSize.width , TheGlWindowSize.height , GL_RGB , GL_UNSIGNED_BYTE , TheResizedImage.ptr(0) );
+	glDrawPixels ( TheGlWindowSize.width , TheGlWindowSize.height , GL_BGR , GL_UNSIGNED_BYTE , TheResizedImage.ptr(0) );
 	///Set the appropriate projection matrix so that rendering is done in a enrvironment
 	//like the real camera (without distorsion)
 	glMatrixMode(GL_PROJECTION);
@@ -207,53 +159,22 @@ void vDrawScene()
 	MarkerDetector::glGetProjectionMatrix(TheCameraParams,TheInputImage.size(),TheGlWindowSize,proj_matrix,0.05,10);
 	glLoadIdentity();
 	glLoadMatrixd(proj_matrix);
-	glLineWidth(2);
-	//now, for each marker,
+
 	double modelview_matrix[16];
-
-	for(unsigned int m=0;m<TheMarkers.size();m++)
-	{
-		TheMarkers[m].glGetModelViewMatrix(modelview_matrix);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glLoadMatrixd(modelview_matrix);
-
-
-// 		axis(TheMarkerSize);
-
-		glColor3f(1,0.4,0.4);
-		glTranslatef(0, TheMarkerSize/2,0);
-		glPushMatrix();
- 		glutWireCube( TheMarkerSize );
-
-		glPopMatrix();
-	}
 	//If the board is detected with enough probability
 	if (TheBoardDetected.second>0.3){
 	  TheBoardDetected.first.glGetModelViewMatrix(modelview_matrix);
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 		glLoadMatrixd(modelview_matrix);
-		glColor3f(0,1,0);
-		glTranslatef(0, TheMarkerSize/2,0);
 		glPushMatrix();
- 		glutWireCube( TheMarkerSize );
  		glCallList(STLDisplayList);
-		axis(TheMarkerSize);
 		glPopMatrix();
 	}
 
 	glutSwapBuffers();
-
 }
 
-
-/************************************
- *
- *
- *
- *
- ************************************/
 void vIdle()
 {
   if(TheCaptureFlag){
@@ -261,8 +182,6 @@ void vIdle()
 	TheVideoCapturer.grab();
 	TheVideoCapturer.retrieve( TheInputImage);
 	TheUndInputImage.create(TheInputImage.size(),CV_8UC3);
-	//by deafult, opencv works in BGR, so we must convert to RGB because OpenGL in windows preffer
-	cv::cvtColor(TheInputImage,TheInputImage,CV_BGR2RGB);
 	//remove distorion in image
 	cv::undistort(TheInputImage,TheUndInputImage, TheCameraParams.CameraMatrix,TheCameraParams.Distorsion);
 	//detect markers
@@ -276,13 +195,6 @@ void vIdle()
   glutPostRedisplay();
 }
 
-
-/************************************
- *
- *
- *
- *
- ************************************/
 void vResize( GLsizei iWidth, GLsizei iHeight )
 {
 	TheGlWindowSize=Size(iWidth,iHeight);
@@ -298,53 +210,34 @@ void vResize( GLsizei iWidth, GLsizei iHeight )
 	}
 }
 
-
-/************************************
- *
- *
- *
- *
- ************************************/
 void usage()
 {
-	cout<<"This program test the ArUco Library \n\n";
-	cout<<"-i <video.avi>: specifies a input video file. If not, images from camera are captures"<<endl;
-	cout<<"-f <file.int>: if you have calibrated your camera, pass calibration information here so as to be able to get 3D marker info"<<endl;
-	cout<<"-y <file.yml>: if you have calibrated your camera in yml format as provided by the calibration.cpp aplication in OpenCv >= 2.2"<<endl;
-	cout<<"-b <boardConfiguration.abc>: file with the board configuration"<<endl;
-	cout<<"-s <size>: size of the marker's sides (expressed in meters!)"<<endl;
+	cout<<"arstl is an Augmented Reality STL viewer\nUsage:\n";
+	cout<<" arstl -f camera.yml -b board.abc -s 0.035 file.stl"<<endl;
+	cout<<" -i <video.avi>: specifies a input video file. If not, images from camera are captured"<<endl;
+	cout<<" -f <file.int>: if you have calibrated your camera, pass calibration information here so as to be able to get 3D marker info"<<endl;
+	cout<<" -y <file.yml>: if you have calibrated your camera in yml format as provided by the calibration.cpp aplication in OpenCv >= 2.2"<<endl;
+	cout<<" -b <boardConfiguration.abc>: file with the board configuration"<<endl;
+	cout<<" -s <size>: size of the marker's sides (expressed in meters!)"<<endl;
 }
 
-
-/************************************
- *
- *
- *
- *
- ************************************/
-static const char short_options [] = "hi:f:s:b:y:";
-
-static const struct option
-long_options [] =
-{
-	{ "help",           no_argument,   NULL,                 'h' },
-	{ "input",     required_argument,   NULL,           'i' },
-	{ "intFile",     required_argument,   NULL,           'f' },
-	{ "YAMLFile",     required_argument,   NULL,           'y' },
-	{ "size",     required_argument,   NULL,           's' },
-	{ "boardFile",     required_argument,   NULL,           'b' },
-
-	{ 0, 0, 0, 0 }
-};
-
-/************************************
- *
- *
- *
- *
- ************************************/
 void readArguments ( int argc,char **argv )
 {
+    static const char short_options [] = "hi:f:s:b:y:";
+
+    static const struct option
+    long_options [] =
+    {
+	    { "help",           no_argument,   NULL,                 'h' },
+	    { "input",     required_argument,   NULL,           'i' },
+	    { "intFile",     required_argument,   NULL,           'f' },
+	    { "YAMLFile",     required_argument,   NULL,           'y' },
+	    { "size",     required_argument,   NULL,           's' },
+	    { "boardFile",     required_argument,   NULL,           'b' },
+
+	    { 0, 0, 0, 0 }
+    };
+
 	for ( ;; )
 	{
 		int index;
@@ -385,6 +278,13 @@ void readArguments ( int argc,char **argv )
 				exit ( EXIT_FAILURE );
 		};
 	}
-
+	
+	if (optind >= argc) {
+	    fprintf(stderr, "Error: STL filename required\n");
+	    usage();
+	    exit(EXIT_FAILURE);
+	} else {
+	    STLFile = argv[optind];
+	}
 }
 
