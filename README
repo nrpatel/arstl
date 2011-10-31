@@ -1,0 +1,37 @@
+arstl is an Augmented Reality viewer for files used in 3D Printing
+==================================================================
+arstl lets you preview and interact with STL files in the real world before
+committing an object to plastic by printing it out.  It uses the ArUco library
+to track markers and OpenGL shaders to display the object being viewed.
+
+Requirements
+------------
+ArUco http://www.uco.es/investiga/grupos/ava/node/26
+OpenCV 2.1+
+OpenGL 2.1+
+
+Camera Calibration
+------------------
+Before using arstl, you'll need to find the intrinsic parameters of your camera.
+The camera.yml included is an example from my Logitech 9000.  You can generate
+your own using the calibration sample and checkerboard pattern included with
+OpenCV.
+
+Board Generation
+----------------
+ArUco includes utilities to generate markers and boards.  The board.abc and
+board.png include are examples that you can use.
+
+Usage
+-----
+Once you have a calibrated camera and a printed out board, you can run arstl
+as follows:
+arstl -y camera.yml -b board.abc -s 0.035 file.stl
+
+License
+-------
+arstl.c is based on an ArUco sample.  ArUco states vaguely that it is under a
+BSD license.  My changes are available under the ISC License.  The stlparser.c
+file may be useful separately, so I'm putting it in the public domain.  The
+shader files are directly from a lighthouse3d tutorial.
+

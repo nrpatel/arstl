@@ -1,3 +1,7 @@
+/* To the extent possible under law, Nirav Patel has waived all copyright
+ * and related or neighboring rights to stlparser. 
+ */
+
 #include "stlparser.h"
 #include <stdio.h>
 #include <stdlib.h>
