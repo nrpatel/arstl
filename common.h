@@ -1,6 +1,7 @@
 #ifndef _COMMON_ARUCO_
 #define _COMMON_ARUCO_
 #include <opencv/cv.h>
+using namespace cv;
 /* File from the ArUco library by Rafael Munoz-Salinas: rmsalinas@uco.es */
 
 /**This function reads the matrix intrinsics and the distorsion coefficients from a file.

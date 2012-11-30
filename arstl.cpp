@@ -27,7 +27,11 @@
 #include <fstream>
 #include <sstream>
 #include <GL/glew.h>
-#include <GL/glut.h>
+#ifdef __APPLE__
+    #include <GLUT/glut.h>
+#else
+    #include <GL/glut.h>
+#endif
 #include <aruco/aruco.h>
 #include <aruco/boarddetector.h>
 #include "common.h"
